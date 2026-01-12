@@ -235,8 +235,8 @@ def create_multiple_magnifications_enhanced(
 
     xlsx_source = source_path.parent.parent / "BRACS.xlsx"
     if xlsx_source.exists():
-        shutil.copy2(xlsx_source, base_output_path / "BRACS.xlsx")
-        print(f"✓ Copied BRACS.xlsx to {base_output_path}")
+        shutil.copy2(xlsx_source, base_output_path.parent / "BRACS.xlsx")
+        print(f"✓ Copied BRACS.xlsx to {base_output_path.parent}")
     else:
         print(f"⚠ Warning: BRACS.xlsx not found at {xlsx_source}")
     
