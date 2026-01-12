@@ -4,6 +4,8 @@ import numpy as np
 from scipy import ndimage
 from tqdm import tqdm
 import shutil
+import argparse
+
 
 # Increase limit for large BRACS images
 Image.MAX_IMAGE_PIXELS = 500_000_000
@@ -100,9 +102,6 @@ def create_multimag_dataset_enhanced(
     
     # Create output directory & copy metadata
     output_path.mkdir(parents=True, exist_ok=True)    
-    xlsx_source = source_path.parent.parent / "BRACS.xlsx"
-    if xlsx_source.exists():
-        shutil.copy2(xlsx_source, output_path / "BRACS.xlsx")
     
     # Calculate scaling
     mag_ratio = target_mpp / source_mpp
@@ -230,7 +229,16 @@ def create_multiple_magnifications_enhanced(
         ensure_all_mags: If True, only process images that can be scaled to all MPPs
         **kwargs: Additional arguments passed to create_multimag_dataset_enhanced
     """
+    source_path = Path(source_path)
     base_output_path = Path(base_output_path)
+    base_output_path.mkdir(parents=True, exist_ok=True)
+
+    xlsx_source = source_path.parent.parent / "BRACS.xlsx"
+    if xlsx_source.exists():
+        shutil.copy2(xlsx_source, base_output_path / "BRACS.xlsx")
+        print(f"✓ Copied BRACS.xlsx to {base_output_path}")
+    else:
+        print(f"⚠ Warning: BRACS.xlsx not found at {xlsx_source}")
     
     # Calculate minimum size if ensuring all magnifications
     if ensure_all_mags:
@@ -271,15 +279,21 @@ def create_multiple_magnifications_enhanced(
 
 
 if __name__ == "__main__":
-    source_dataset = "/app/BRACS_RoI/latest_version"
-    output_base = "/app/BRACS_multimag_enhanced"
     
-    print("Creating BRACS-MS via progressive downsampling for all magnifications")
+    parser = argparse.ArgumentParser(description='Create BRACS multi-magnification dataset')
+    parser.add_argument('--source', type=str, required=True, help='Source dataset path')
+    parser.add_argument('--output', type=str, required=True, help='Output base path')
+    parser.add_argument('--method', type=str, default='progressive', help='Downsampling method')
+    parser.add_argument('--patch-size', type=int, default=224, help='Patch size')
+    parser.add_argument('--mpps', type=float, nargs='+', default=[0.25, 0.375, 0.5, 0.75, 1.0, 1.5, 2.0])
+    
+    args = parser.parse_args()
+    
     results = create_multiple_magnifications_enhanced(
-        source_path=source_dataset,
-        base_output_path=f"{output_base}/progressive",
-        mpps=[0.25, 0.375, 0.5,0.75, 1.0, 1.5, 2.0],
-        downsampling_method='progressive',
+        source_path=args.source,
+        base_output_path=f"{args.output}/{args.method}",
+        mpps=args.mpps,
+        downsampling_method=args.method,
         ensure_all_mags=True,
-        patch_size=224
+        patch_size=args.patch_size
     )
