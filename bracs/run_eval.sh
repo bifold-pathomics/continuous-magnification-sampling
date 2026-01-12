@@ -1,0 +1,15 @@
+python evaluate_bracs_benchmark.py \
+  --dataset bracs \
+  --model_name "Virchow" \
+  --train_mpps 0.25 0.5 1.0 2.0 \
+  --test_mpps 0.25 0.375 0.5 0.75 1.0 1.5 2.0 \
+  --bracs_data_root bracs_multimag \
+  --bracs_excel_path bracs_multimag/BRACS.xlsx \
+  --gpu_ids "0" \
+  --folds 0 1 2 3 4 \
+  --output_dir results_mult \
+  --batch_size 40 \
+  --num_workers 6 \
+  --seed 22 \
+  --target_patchsize 224 \
+  --classifier logreg knn
