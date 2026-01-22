@@ -1,4 +1,4 @@
-python evaluate_bracs_benchmark.py \
+python evaluate_benchmarks.py \
   --dataset bracs \
   --model_name "Virchow" \
   --train_mpps 0.25 0.5 1.0 2.0 \
