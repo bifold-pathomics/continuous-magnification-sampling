@@ -458,14 +458,14 @@ def parse_args():
                         help='Number of workers for dataloader')
     parser.add_argument('--gpu_ids', type=str, default='0',
                         help='GPU IDs to use, comma separated')
-    parser.add_argument('--output_dir', type=str, default='/app/results',
+    parser.add_argument('--output_dir', type=str, default='results',
                         help='Directory to save results')
     parser.add_argument('--folds', type=int, nargs='+', default=[0, 1, 2, 3, 4],
                         help='Fold numbers to evaluate')
     parser.add_argument('--classifier', type=str, nargs='+', default=['logreg', 'knn'],
                         choices=['logreg', 'knn'],
                         help='Classifier(s) to use: logreg, knn, or both')
-    parser.add_argument('--bracs_data_root', type=str, default='/app/BRACS_multimag',
+    parser.add_argument('--bracs_data_root', type=str, default='BRACS_multimag',
                         help='Root directory for BRACS dataset')
     parser.add_argument('--bracs_excel_path', type=str, default=None,
                         help='Path to BRACS.xlsx')
@@ -475,7 +475,7 @@ def parse_args():
     parser.add_argument('--tcga_data_root', type=str, default='/app/tcga_ms',
                         help='Root directory for extracted TCGA patches')
     parser.add_argument('--tcga_label_file', type=str, 
-                        default='/app/foundation-model/home/alexanderm/selected_labels.csv')
+                        default='tcga_ms/labels.csv')
     
     return parser.parse_args()
 
