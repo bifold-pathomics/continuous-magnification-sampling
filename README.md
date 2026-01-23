@@ -6,12 +6,6 @@ This repository contains the accompanying code for our work on continuous magnif
 
 > **Note:** This repository is under active development and will be updated continuously.
 
-## Release Notes
-
-**2025-01-09**
-- Added code to create and evaluate the BRACS-MS dataset
-**2025-01-22**
-- Added code to create and evaluate the TCGA-MS dataset
 
 ## Getting Started
 
@@ -59,3 +53,14 @@ run_tcga_eval.sh
 ```bash
 run_bracs_eval.sh
 ```
+
+
+## Release Notes
+
+**2025-01-09**
+- Added code to create and evaluate the BRACS-MS dataset
+
+**2025-01-22**
+- Added code to create and evaluate the TCGA-MS dataset
+
+
