@@ -12,30 +12,76 @@ from PIL import Image
 from torchvision import transforms
 from joblib import Parallel, delayed
 from tqdm import tqdm
-from eval.model_selection_benchmarks.model_evaluation import External
-from notebooks.bracs_analysis.model_loading.load_models import TokenWrapperModel
+from model_loading.load_models import External
+from model_loading.load_models import TokenWrapperModel
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from sklearn.neighbors import KNeighborsClassifier
 
 Image.MAX_IMAGE_PIXELS = 500_000_000
 
 
+class TCGADataset(Dataset):
+    def __init__(self, image_dir: Path, slide_uuids: set, label_map: dict, transform=None):
+        self.image_dir = image_dir
+        self.transform = transform
+        self.label_map = label_map
+        
+        all_files = list(image_dir.glob("*.png"))
+        self.image_paths = [f for f in all_files if f.stem.rsplit('_', 2)[0] in slide_uuids]
+    
+    def __len__(self):
+        return len(self.image_paths)
+    
+    def __getitem__(self, idx):
+        img_path = self.image_paths[idx]
+        slide_uuid = img_path.stem.rsplit('_', 2)[0]
+        label = self.label_map[slide_uuid]
+        
+        img = Image.open(img_path).convert('RGB')
+        if self.transform:
+            img = self.transform(img)
+        return img, label
+
+
+def create_tcga_dataloaders(data_root, label_df, mpp, fold,
+                            batch_size, num_workers, transform_parameters):
+    fold_col = f"fold_{fold}"
+    
+    train_slides = set(label_df[label_df[fold_col] == 'train']['slide_uuid'])
+    val_slides = set(label_df[label_df[fold_col] == 'dev']['slide_uuid'])
+    test_slides = set(label_df[label_df[fold_col] == 'test']['slide_uuid'])
+    
+    label_map = dict(zip(label_df['slide_uuid'], label_df['label_id']))
+    mpp_dir = Path(data_root) / f"mpp_{mpp}"
+    
+    mean, std = transform_parameters
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=mean, std=std)
+    ])
+    
+    train_loader = DataLoader(
+        TCGADataset(mpp_dir, train_slides, label_map, transform),
+        batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=True
+    )
+    val_loader = DataLoader(
+        TCGADataset(mpp_dir, val_slides, label_map, transform),
+        batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=True
+    )
+    test_loader = DataLoader(
+        TCGADataset(mpp_dir, test_slides, label_map, transform),
+        batch_size=batch_size, shuffle=False,
+        num_workers=num_workers, pin_memory=True
+    )
+    
+    return train_loader, val_loader, test_loader
+
+
 def train_and_evaluate_knn(X_train, y_train, X_val, y_val, X_test_dict, y_test_dict, n_jobs=4):
-    """
-    Train kNN classifier with hyperparameter tuning on k.
+    """Train kNN classifier with hyperparameter tuning on k."""
     
-    Args:
-        X_train, y_train: Training data
-        X_val, y_val: Validation data for hyperparameter tuning
-        X_test_dict: Dict of {mpp: test_embeddings}
-        y_test_dict: Dict of {mpp: test_labels}
-        n_jobs: Number of parallel jobs
-    
-    Returns:
-        Dict with test metrics per MPP, best_k, and validation metrics
-    """
-    
-    # Hyperparameter tuning for k
     k_values = [1, 3, 5, 10, 20, 40, 80]    
     print(f"\nTuning kNN with k values: {k_values}")
     
@@ -59,7 +105,6 @@ def train_and_evaluate_knn(X_train, y_train, X_val, y_val, X_test_dict, y_test_d
     
     print(f"\nBest k: {best_k} with Val balanced accuracy: {best_val_balanced_acc:.4f}")
     
-    # Train final model with best k
     final_model = KNeighborsClassifier(
         n_neighbors=best_k,
         metric='cosine',
@@ -67,7 +112,6 @@ def train_and_evaluate_knn(X_train, y_train, X_val, y_val, X_test_dict, y_test_d
     )
     final_model.fit(X_train, y_train)
     
-    # Calculate validation metrics with final model
     y_val_pred = final_model.predict(X_val)
     val_metrics = {
         'accuracy': accuracy_score(y_val, y_val_pred),
@@ -76,7 +120,6 @@ def train_and_evaluate_knn(X_train, y_train, X_val, y_val, X_test_dict, y_test_d
         'f1_weighted': f1_score(y_val, y_val_pred, average='weighted')
     }
     
-    # Evaluate on test sets
     test_metrics = {}
     for mpp in sorted(X_test_dict.keys()):
         y_test_pred = final_model.predict(X_test_dict[mpp])
@@ -92,19 +135,8 @@ def train_and_evaluate_knn(X_train, y_train, X_val, y_val, X_test_dict, y_test_d
 
 
 def train_and_evaluate_classifier(X_train, y_train, X_val, y_val, X_test_dict, y_test_dict):
-    """
-    Train logistic regression classifier with hyperparameter tuning.
+    """Train logistic regression classifier with hyperparameter tuning."""
     
-    Args:
-        X_train, y_train: Training data
-        X_val, y_val: Validation data for hyperparameter tuning
-        X_test_dict: Dict of {mpp: test_embeddings}
-        y_test_dict: Dict of {mpp: test_labels}
-    
-    Returns:
-        Dict with test metrics per MPP, best_C, and validation metrics
-    """
-    # Hyperparameter tuning
     C_values = np.logspace(-4, 4, 9)
     print(f"\nTuning L2 penalty with C values: {C_values}")
     
@@ -127,22 +159,20 @@ def train_and_evaluate_classifier(X_train, y_train, X_val, y_val, X_test_dict, y
     
     print(f"\nBest C: {best_C:.6f} with Val balanced accuracy: {best_val_balanced_acc:.4f}")
     
-    # Train final model with best C
     final_model = LogisticRegression(
         C=best_C, max_iter=1000, solver='lbfgs',
         multi_class='multinomial', random_state=42, class_weight='balanced'
     )
     final_model.fit(X_train, y_train)
     
-    # Calculate validation metrics with final model
     y_val_pred = final_model.predict(X_val)
     val_metrics = {
         'accuracy': accuracy_score(y_val, y_val_pred),
         'balanced_accuracy': balanced_accuracy_score(y_val, y_val_pred),
         'f1_macro': f1_score(y_val, y_val_pred, average='macro'),
         'f1_weighted': f1_score(y_val, y_val_pred, average='weighted')
-    }    
-    # Evaluate on test sets
+    }
+    
     test_metrics = {}
     for mpp in sorted(X_test_dict.keys()):
         y_test_pred = final_model.predict(X_test_dict[mpp])
@@ -159,12 +189,7 @@ def train_and_evaluate_classifier(X_train, y_train, X_val, y_val, X_test_dict, y
 
 def train_and_evaluate_classifiers(X_train, y_train, X_val, y_val, X_test_dict, y_test_dict, 
                                     use_knn=True, use_logreg=True):
-    """
-    Train and evaluate both logistic regression and kNN classifiers.
-    
-    Returns:
-        Dict with results for each classifier type
-    """
+    """Train and evaluate both logistic regression and kNN classifiers."""
     results = {}
     
     if use_logreg:
@@ -199,15 +224,7 @@ def train_and_evaluate_classifiers(X_train, y_train, X_val, y_val, X_test_dict, 
 
 
 def aggregate_classifier_results(all_results_by_classifier):
-    """
-    Aggregate results across folds for each classifier.
-    
-    Args:
-        all_results_by_classifier: Dict of {classifier: {fold: results}}
-    
-    Returns:
-        Aggregated statistics per classifier
-    """
+    """Aggregate results across folds for each classifier."""
     aggregated = {}
     
     for clf_name, fold_results in all_results_by_classifier.items():
@@ -224,13 +241,11 @@ def aggregate_classifier_results(all_results_by_classifier):
             if result is None:
                 continue
                 
-            # Collect validation metrics
             for metric_name, value in result['val_metrics'].items():
                 all_val_metrics[metric_name].append(value)
             
             all_best_params.append(result['best_param'])
             
-            # Collect test metrics
             for mpp, metrics_dict in result['test_metrics'].items():
                 if mpp not in all_test_metrics:
                     all_test_metrics[mpp] = {
@@ -262,11 +277,9 @@ def aggregate_classifier_results(all_results_by_classifier):
     
     return aggregated
 
+
 class BRACSDataset(Dataset):
-    """
-    Dataset for BRACS images with labels extracted from filenames.
-    Filename format: BRACS_{WSI_ID}_{SUBTYPE}_{ROI_NUM}.png
-    """
+    """Dataset for BRACS images with labels extracted from filenames."""
     
     LABEL_MAP = {
         'N': 0, 'PB': 1, 'UDH': 2, 'FEA': 3,
@@ -283,13 +296,11 @@ class BRACSDataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         
-        # Parse label from filename
         filename = img_path.stem
         parts = filename.split('_')
         subtype = parts[2]
         label = self.LABEL_MAP[subtype]
         
-        # Load image
         image = Image.open(img_path).convert('RGB')
         
         if self.transform:
@@ -335,10 +346,7 @@ def create_bracs_dataloaders(data_root, mpp, target_patchsize, batch_size,
 
 
 def get_bracs_wsi_splits(excel_path, data_root, mpp, fold, n_folds=5, seed=42):
-    """
-    Get BRACS train/val/test splits at WSI level.    
-    If fold is specified: Uses k-fold cross-validation at WSI level
-    """
+    """Get BRACS train/val/test splits at WSI level."""
     df = pd.read_excel(excel_path, sheet_name='WSI_Information')
     
     data_path = Path(data_root) / f"BRACS_{mpp}mpp"
@@ -349,7 +357,6 @@ def get_bracs_wsi_splits(excel_path, data_root, mpp, fold, n_folds=5, seed=42):
     if fold < 0 or fold >= n_folds:
         raise ValueError(f"Fold {fold} is out of range for {n_folds} folds. Must be in [0, {n_folds-1}]")
     
-    # Group images by WSI and patient
     wsi_to_images = {}
     wsi_to_label = {}
     wsi_to_patient = {}
@@ -365,19 +372,16 @@ def get_bracs_wsi_splits(excel_path, data_root, mpp, fold, n_folds=5, seed=42):
             wsi_to_images[wsi_id] = []
             wsi_to_label[wsi_id] = label
             
-            # Get patient ID from Excel
             wsi_match = df[df['WSI Filename'] == wsi_id]
             if not wsi_match.empty:
                 wsi_to_patient[wsi_id] = wsi_match.iloc[0]['Patient Id']
             else:
-                wsi_to_patient[wsi_id] = wsi_id  # fallback to WSI ID
+                wsi_to_patient[wsi_id] = wsi_id
         
         wsi_to_images[wsi_id].append(img_path)
     
     wsi_ids = list(wsi_to_images.keys())
     
-    # K-fold cross-validation at WSI level, stratified by patient and label
-    # Group WSIs by patient to avoid patient leakage
     patient_to_wsis = {}
     patient_labels = {}
     
@@ -385,20 +389,16 @@ def get_bracs_wsi_splits(excel_path, data_root, mpp, fold, n_folds=5, seed=42):
         patient_id = wsi_to_patient[wsi_id]
         if patient_id not in patient_to_wsis:
             patient_to_wsis[patient_id] = []
-            # Use most common label for this patient
             patient_labels[patient_id] = wsi_to_label[wsi_id]
         patient_to_wsis[patient_id].append(wsi_id)
 
-    
     patients = list(patient_to_wsis.keys())
     labels = [patient_labels[p] for p in patients]
 
-    # Stratified k-fold on patients
     skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=seed)
     splits = list(skf.split(patients, labels))
     train_val_idx, test_idx = splits[fold]
     
-    # Further split train_val into train and val
     train_val_patients = [patients[i] for i in train_val_idx]
     train_val_labels = [labels[i] for i in train_val_idx]
     
@@ -410,20 +410,19 @@ def get_bracs_wsi_splits(excel_path, data_root, mpp, fold, n_folds=5, seed=42):
     val_patients = [train_val_patients[i] for i in val_idx_inner]
     test_patients = [patients[i] for i in test_idx]
     
-    # Convert patients to WSIs
     train_wsis = [wsi for p in train_patients for wsi in patient_to_wsis[p]]
     val_wsis = [wsi for p in val_patients for wsi in patient_to_wsis[p]]
     test_wsis = [wsi for p in test_patients for wsi in patient_to_wsis[p]]
     
-    # Convert WSIs to image paths
     train_paths = [img for wsi in train_wsis for img in wsi_to_images.get(wsi, [])]
     val_paths = [img for wsi in val_wsis for img in wsi_to_images.get(wsi, [])]
     test_paths = [img for wsi in test_wsis for img in wsi_to_images.get(wsi, [])]
     
     return train_paths, val_paths, test_paths
 
-def extract_embeddings_bracs(model, dataloader, device):
-    """Extract embeddings from model for BRACS dataset."""
+
+def extract_embeddings(model, dataloader, device):
+    """Extract embeddings from model."""
     embeddings_list = []
     labels_list = []
     
@@ -439,6 +438,7 @@ def extract_embeddings_bracs(model, dataloader, device):
     labels = torch.cat(labels_list, dim=0)
     
     return embeddings, labels
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Evaluate SSL models on TCGA or BRACS dataset')
@@ -458,34 +458,31 @@ def parse_args():
                         help='Number of workers for dataloader')
     parser.add_argument('--gpu_ids', type=str, default='0',
                         help='GPU IDs to use, comma separated')
-    parser.add_argument('--output_dir', type=str, default='/app/results',
+    parser.add_argument('--output_dir', type=str, default='results',
                         help='Directory to save results')
     parser.add_argument('--folds', type=int, nargs='+', default=[0, 1, 2, 3, 4],
                         help='Fold numbers to evaluate')
     parser.add_argument('--classifier', type=str, nargs='+', default=['logreg', 'knn'],
-                    choices=['logreg', 'knn'],
-                    help='Classifier(s) to use: logreg, knn, or both')
-    parser.add_argument('--bracs_data_root', type=str, default='/app/BRACS_multimag',
+                        choices=['logreg', 'knn'],
+                        help='Classifier(s) to use: logreg, knn, or both')
+    parser.add_argument('--bracs_data_root', type=str, default='BRACS_multimag',
                         help='Root directory for BRACS dataset')
     parser.add_argument('--bracs_excel_path', type=str, default=None,
                         help='Path to BRACS.xlsx')
-    parser.add_argument('--seed', type=str, default=42,
+    parser.add_argument('--seed', type=int, default=42,
                         help='Random seed for reproducibility')
     parser.add_argument('--token_mode', type=str, default='cls+mean')
-
+    parser.add_argument('--tcga_data_root', type=str, default='/app/tcga_ms',
+                        help='Root directory for extracted TCGA patches')
+    parser.add_argument('--tcga_label_file', type=str, 
+                        default='tcga_ms/labels.csv')
     
     return parser.parse_args()
 
 
-def evaluate_dataset(args, model, device, img_normalization, fold):
-    """
-    Unified evaluation function for both BRACS and TCGA.
+def evaluate_dataset(args, model, device, img_normalization, fold, label_df=None):
+    """Unified evaluation function for both BRACS and TCGA."""
     
-    Returns:
-        test_accuracies_dict: {mpp: accuracy} for this fold
-        val_accuracy: validation accuracy
-        best_C: best regularization parameter
-    """
     train_embeddings_list = []
     val_embeddings_list = []
     train_labels_list = []
@@ -496,43 +493,55 @@ def evaluate_dataset(args, model, device, img_normalization, fold):
     print(f"\nCollecting training/val embeddings from MPPs: {args.train_mpps}")    
     
     if args.dataset == 'bracs':
-        
-        # BRACS data loading
         for train_mpp in args.train_mpps:
             print(f"\nProcessing training MPP: {train_mpp}")
             
             try:
-                fold_arg = fold
                 train_loader, val_loader, _ = create_bracs_dataloaders(
                     args.bracs_data_root, train_mpp, args.target_patchsize,
                     args.batch_size, args.num_workers, 
                     excel_path=args.bracs_excel_path,
                     seed=seed,
-                    fold=fold_arg, n_folds=len(args.folds),
+                    fold=fold, n_folds=len(args.folds),
                     transform_parameters=img_normalization
                 )
                 
                 with torch.no_grad():
-                    train_emb, train_lab = extract_embeddings_bracs(model, train_loader, device)
-                    val_emb, val_lab = extract_embeddings_bracs(model, val_loader, device)
-                    print(f"Training data shape for MPP {train_mpp} : {train_emb.shape}")
+                    train_emb, train_lab = extract_embeddings(model, train_loader, device)
+                    val_emb, val_lab = extract_embeddings(model, val_loader, device)
+                    print(f"Training data shape for MPP {train_mpp}: {train_emb.shape}")
 
                     train_embeddings_list.append(train_emb)
                     train_labels_list.append(train_lab)
                     val_embeddings_list.append(val_emb)
                     val_labels_list.append(val_lab)
                     
-                  
             except Exception as e:
                 print(f"Error processing training MPP {train_mpp}: {str(e)}")
                 continue
-        
+    
+    elif args.dataset == 'tcga':
+        for train_mpp in args.train_mpps:
+            print(f"\nProcessing training MPP: {train_mpp}")
+            
+            train_loader, val_loader, _ = create_tcga_dataloaders(
+                args.tcga_data_root, label_df, train_mpp, fold,
+                args.batch_size, args.num_workers, img_normalization
+            )
+            
+            with torch.no_grad():
+                train_emb, train_lab = extract_embeddings(model, train_loader, device)
+                val_emb, val_lab = extract_embeddings(model, val_loader, device)
+                print(f"Training data shape for MPP {train_mpp}: {train_emb.shape}")
+                
+                train_embeddings_list.append(train_emb)
+                train_labels_list.append(train_lab)
+                val_embeddings_list.append(val_emb)
+                val_labels_list.append(val_lab)
+            
     if not train_embeddings_list:
-        # raise error
         raise RuntimeError("No training embeddings were collected. Cannot proceed with evaluation.")
 
-    
-    # Concatenate embeddings
     train_embeddings = torch.cat(train_embeddings_list, dim=0)
     val_embeddings = torch.cat(val_embeddings_list, dim=0)
     train_labels = torch.cat(train_labels_list, dim=0)
@@ -549,27 +558,25 @@ def evaluate_dataset(args, model, device, img_normalization, fold):
     print("\n" + "="*60)
     print("Collecting test embeddings")
     print("="*60)
+    
     X_test_dict = {}
     y_test_dict = {}
     
     if args.dataset == 'bracs':
-
-        # BRACS test data
         for test_mpp in args.test_mpps:
             print(f"\nProcessing test MPP: {test_mpp}")
             
             try:
-                fold_arg = fold
                 _, _, test_loader = create_bracs_dataloaders(
                     args.bracs_data_root, test_mpp, args.target_patchsize,
                     args.batch_size, args.num_workers,
                     excel_path=args.bracs_excel_path,
-                    fold=fold_arg, n_folds=len(args.folds), seed=seed,
+                    fold=fold, n_folds=len(args.folds), seed=seed,
                     transform_parameters=img_normalization
                 )
                 
                 with torch.no_grad():
-                    test_emb, test_lab = extract_embeddings_bracs(model, test_loader, device)
+                    test_emb, test_lab = extract_embeddings(model, test_loader, device)
                 
                 X_test_dict[test_mpp] = test_emb.numpy()
                 y_test_dict[test_mpp] = test_lab.numpy()
@@ -577,6 +584,20 @@ def evaluate_dataset(args, model, device, img_normalization, fold):
             except Exception as e:
                 raise RuntimeError(f"Error processing test MPP {test_mpp}") from e
 
+    elif args.dataset == 'tcga':
+        for test_mpp in args.test_mpps:
+            print(f"\nProcessing test MPP: {test_mpp}")
+            
+            _, _, test_loader = create_tcga_dataloaders(
+                args.tcga_data_root, label_df, test_mpp, fold,
+                args.batch_size, args.num_workers, img_normalization
+            )
+            
+            with torch.no_grad():
+                test_emb, test_lab = extract_embeddings(model, test_loader, device)
+            
+            X_test_dict[test_mpp] = test_emb.numpy()
+            y_test_dict[test_mpp] = test_lab.numpy()
                 
     print("\n" + "="*60)
     print("Training classifier and evaluating")
@@ -596,12 +617,10 @@ def evaluate_dataset(args, model, device, img_normalization, fold):
 def main():
     args = parse_args()
     
-    # Parse GPU IDs
     gpu_ids = [int(x) for x in args.gpu_ids.split(',')]
     device = torch.device(f'cuda:{gpu_ids[0]}' if torch.cuda.is_available() else 'cpu')
     os.makedirs(args.output_dir, exist_ok=True)
     
-    # Load model
     print(f"Loading model: {args.model_name}")
     if args.model_name in ["uni_vitl", "H-optimus-0", "conch_1_5_trunk", 
                            "Virchow2", "prov_gigapath", "phikon-v2", 
@@ -615,7 +634,6 @@ def main():
         )
     else:
         raise ValueError(f"Model {args.model_name} not recognized or supported.")
-        
     
     model = TokenWrapperModel(
         model,
@@ -625,24 +643,34 @@ def main():
     model = nn.DataParallel(model, device_ids=gpu_ids)
     model = model.to(device).eval()
     
+    # Load TCGA metadata and labels once if needed
+    label_df = None
+    if args.dataset == 'tcga':
+        label_df = pd.read_csv(args.tcga_label_file)
+        print(f"Labels shape: {label_df.shape}")
+        label_df = pd.read_csv(args.tcga_label_file)
+        print(f"Labels shape: {label_df.shape}")
+    
     print("\n" + "="*60)
     print(f"EVALUATING {args.dataset.upper()} - K-FOLD CROSS-VALIDATION")
     print("="*60)
 
     folds_to_run = args.folds
-    all_results_by_classifier = {}  
+    all_results_by_classifier = {}
+    
     for fold in folds_to_run:
-        if fold is not None:
-            print(f"\n{'='*60}")
-            print(f"Processing fold {fold}")
-            print(f"{'='*60}")
+        print(f"\n{'='*60}")
+        print(f"Processing fold {fold}")
+        print(f"{'='*60}")
         
-        classifier_results = evaluate_dataset(args, model, device, img_normalization, fold)
+        classifier_results = evaluate_dataset(
+            args, model, device, img_normalization, fold,
+            label_df=label_df
+        )
         
         if classifier_results is None:
             raise RuntimeError(f"Evaluation failed for fold {fold}")
                 
-        # Collect results per classifier
         for clf_name, result in classifier_results.items():
             if clf_name not in all_results_by_classifier:
                 all_results_by_classifier[clf_name] = {}
@@ -651,7 +679,6 @@ def main():
     aggregated = aggregate_classifier_results(all_results_by_classifier)
     
     for clf_name, results in aggregated.items(): 
-        ###### Print Block Start ######
         print("\n" + "="*60)
         print(f"FINAL RESULTS - {clf_name.upper()}")
         print("="*60)
@@ -661,7 +688,6 @@ def main():
         print(f"Split method: {len(folds_to_run)}-fold cross-validation")
         print(f"Average best {results['avg_best_param']:.4f} (param values: {results['best_params']})")
         print("\nTest metrics per MPP:")
-        ###### Print Block END ######
 
         avg_test = results['avg_test_metrics']
         std_test = results['std_test_metrics']
@@ -672,11 +698,9 @@ def main():
                 std = std_test[mpp][metric_name]
                 print(f"    {metric_name}: {avg:.4f} ± {std:.4f}")
         
-        # Save results for this classifier
         split_method = f"{len(folds_to_run)}fold"
         results_path = Path(args.output_dir) / f"{args.dataset.upper()}_{args.model_name.replace(' ', '_')}_{clf_name}_trainMPPs_{'_'.join(map(str, args.train_mpps))}_{split_method}_results.csv"
         
-        # Create DataFrame with all metrics
         rows = []
         for mpp in sorted(avg_test.keys()):
             row = {'Test_MPP': mpp}
@@ -690,5 +714,6 @@ def main():
         
         print(f"\nResults saved to: {results_path}")
     
+
 if __name__ == "__main__":
     main()

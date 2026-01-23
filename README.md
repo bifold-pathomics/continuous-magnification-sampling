@@ -6,10 +6,6 @@ This repository contains the accompanying code for our work on continuous magnif
 
 > **Note:** This repository is under active development and will be updated continuously.
 
-## Release Notes
-
-**2025-01-09**
-- Added code to create and evaluate the BRACS-MS dataset
 
 ## Getting Started
 
@@ -26,6 +22,12 @@ Some public models require Hugging Face authentication. Log in before running ev
 huggingface-cli login --token YOUR_TOKEN_HERE
 ```
 
+## TCGA-MS Dataset
+
+### 1. Download Dataset
+
+[TCGA-MS](https://huggingface.co/datasets/bifold-pathomics/TCGA-MS)
+
 ## BRACS-MS Dataset
 
 ### 1. Download Source Data
@@ -40,19 +42,25 @@ Adjust the source and output paths in `create_bracs_dataset.sh`, then run:
 ./create_bracs_dataset.sh
 ```
 
-### 3. Run Evaluation
+## Run Evaluation
+
+Adjusts the necessary data paths in the commands and either of: 
+
 ```bash
-./run_eval.sh
+run_tcga_eval.sh
 ```
 
-## TCGA-MS Dataset
+```bash
+run_bracs_eval.sh
+```
 
-*Coming soon*
 
-## Citation
+## Release Notes
 
-*Coming soon*
+**2025-01-09**
+- Added code to create and evaluate the BRACS-MS dataset
 
-## License
+**2025-01-22**
+- Added code to create and evaluate the TCGA-MS dataset
 
-*Coming soon*
+
