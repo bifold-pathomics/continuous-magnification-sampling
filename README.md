@@ -42,9 +42,9 @@ Adjust the source and output paths in `create_bracs_dataset.sh`, then run:
 ./create_bracs_dataset.sh
 ```
 
-### Run Evaluation
+## Run Evaluation
 
-Adjusts the necessary paths in the command and run: 
+Adjusts the necessary data paths in the commands and either of: 
 
 ```bash
 run_tcga_eval.sh
