@@ -24,7 +24,7 @@ huggingface-cli login --token YOUR_TOKEN_HERE
 
 ## TCGA-MS Dataset
 
-### 1. Download the dataset from huggingface
+### 1. Download Dataset
 
 [TCGA-MS](https://huggingface.co/datasets/bifold-pathomics/TCGA-MS)
 
