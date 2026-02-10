@@ -631,7 +631,7 @@ def main():
                        "vits_05mpp_s1", "vits_05mpp_s2", "vits_05mpp_s3",
                        "vits_1mpp_s1", "vits_1mpp_s2", "vits_1mpp_s3",
                        "vits_2mpp_s1", "vits_2mpp_s2", "vits_2mpp_s3",
-                       "vits_mmpp_s1", "vits_mmpp_s2", "vits_mmpp_s3",
+                       "vits_du_s1", "vits_du_s2", "vits_du_s3",
                        "vits_cu_s1", "vits_cu_s2", "vits_cu_s3",
                        "vits_cu_minmax_inf_s1", "vits_cu_minmax_inf_s2", "vits_cu_minmax_inf_s3"]:
     

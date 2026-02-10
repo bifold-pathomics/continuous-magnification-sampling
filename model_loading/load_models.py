@@ -63,7 +63,7 @@ def load_model(name):
         patch_size = 14
     else:
         patch_size = 14
-        repo_id = "bifold-pathomics/mind-the-gap-models"
+        repo_id = "bifold-pathomics/MultiScale_Models"
         config_path = hf_hub_download(repo_id=repo_id, filename="config.json")
         with open(config_path) as f:
             config = json.load(f)
