@@ -1,10 +1,10 @@
 python evaluate_benchmarks.py \
   --dataset bracs \
-  --model_name "Virchow" \
+  --model_name "vits_du_s2" \
   --train_mpps 0.25 0.5 1.0 2.0 \
   --test_mpps 0.25 0.375 0.5 0.75 1.0 1.5 2.0 \
-  --bracs_data_root bracs_multimag \
-  --bracs_excel_path bracs_multimag/BRACS.xlsx \
+  --bracs_data_root /app/BRACS_multimag/progressive/ \
+  --bracs_excel_path /app/BRACS.xlsx \
   --gpu_ids "0" \
   --folds 0 1 2 3 4 \
   --output_dir results_mult \

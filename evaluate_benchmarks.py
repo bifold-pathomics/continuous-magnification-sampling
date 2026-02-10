@@ -623,8 +623,18 @@ def main():
     
     print(f"Loading model: {args.model_name}")
     if args.model_name in ["uni_vitl", "H-optimus-0", "conch_1_5_trunk", 
-                           "Virchow2", "prov_gigapath", "phikon-v2", 
-                           "kaiko_vit_l", "uni_vitl_2", "kaiko_midnight", "Virchow", "H0-mini"]:
+                       "Virchow2", "prov_gigapath", "phikon-v2", 
+                       "kaiko_vit_l", "uni_vitl_2", "kaiko_midnight", "Virchow", "H0-mini",
+                       # Custom models
+                       "cu_maxavg_inf_s1", "cu_maxavg_inf_s2", "cu_maxavg_inf_s3",
+                       "vits_025mpp_s1", "vits_025mpp_s2", "vits_025mpp_s3",
+                       "vits_05mpp_s1", "vits_05mpp_s2", "vits_05mpp_s3",
+                       "vits_1mpp_s1", "vits_1mpp_s2", "vits_1mpp_s3",
+                       "vits_2mpp_s1", "vits_2mpp_s2", "vits_2mpp_s3",
+                       "vits_mmpp_s1", "vits_mmpp_s2", "vits_mmpp_s3",
+                       "vits_cu_s1", "vits_cu_s2", "vits_cu_s3",
+                       "vits_cu_minmax_inf_s1", "vits_cu_minmax_inf_s2", "vits_cu_minmax_inf_s3"]:
+    
         
         model_eval = External(model_id=args.model_name)
         model, image_transform_params = model_eval.get_model_and_parameters(device=device)
@@ -632,6 +642,7 @@ def main():
             image_transform_params.normalization_mean,
             image_transform_params.normalization_std
         )
+    
     else:
         raise ValueError(f"Model {args.model_name} not recognized or supported.")
     

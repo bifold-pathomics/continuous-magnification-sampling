@@ -8,6 +8,9 @@ from pydantic import model_validator
 from model_loading.utils import get_img_normalization_statistics, ImageTransformParams
 import timm
 from timm.layers import SwiGLUPacked
+from huggingface_hub import hf_hub_download
+from safetensors.torch import load_file
+import json
 
 
 
@@ -59,7 +62,16 @@ def load_model(name):
         model = model.eval()
         patch_size = 14
     else:
-        raise ValueError("unknown model")
+        patch_size = 14
+        repo_id = "bifold-pathomics/mind-the-gap-models"
+        config_path = hf_hub_download(repo_id=repo_id, filename="config.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        weights_path = hf_hub_download(repo_id=repo_id, filename=f"{name}.safetensors")
+        state_dict = load_file(weights_path)
+        model = timm.create_model(config["architecture"], pretrained=False, img_size=config["img_size"])
+        model.load_state_dict(state_dict)
+        model.eval()
     return model, normalization, image_size, patch_size
 
 class BaseModelEvaluation:
