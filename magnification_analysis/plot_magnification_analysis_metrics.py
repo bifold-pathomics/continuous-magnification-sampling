@@ -16,7 +16,7 @@ from evaluate_benchmarks import extract_embeddings
 from magnification_analysis.rankme import RankMeMetric
 
 
-def plot_tsne(embeddings_dict, mpps, output_path):
+def plot_tsne(embeddings_dict, output_path):
     """Generate and save t-SNE visualization."""
     all_embeddings = []
     all_mpp_labels = []
@@ -40,21 +40,33 @@ def plot_tsne(embeddings_dict, mpps, output_path):
     for mpp in unique_mpps:
         mask = all_mpp_labels == mpp
         ax.scatter(
-            embeddings_2d[mask, 0], embeddings_2d[mask, 1],
-            c=[color_map[mpp]], label=f'{mpp} MPP',
-            alpha=0.6, s=13, edgecolors='none'
+            embeddings_2d[mask, 0],
+            embeddings_2d[mask, 1],
+            c=[color_map[mpp]],
+            label=f"{mpp} MPP",
+            alpha=0.6,
+            s=13,
+            edgecolors="none",
         )
 
-    ax.legend(title='MPP', loc='best', frameon=True, fancybox=False,
-              edgecolor='#cccccc', framealpha=0.95, fontsize=14, title_fontsize=14)
-    ax.set_xlabel('t-SNE 1', fontsize=16)
-    ax.set_ylabel('t-SNE 2', fontsize=16)
+    ax.legend(
+        title="MPP",
+        loc="best",
+        frameon=True,
+        fancybox=False,
+        edgecolor="#cccccc",
+        framealpha=0.95,
+        fontsize=14,
+        title_fontsize=14,
+    )
+    ax.set_xlabel("t-SNE 1", fontsize=16)
+    ax.set_ylabel("t-SNE 2", fontsize=16)
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()
 
-    plt.savefig(output_path, dpi=600, bbox_inches='tight')
-    plt.savefig(output_path.replace('.png', '.pdf'), bbox_inches='tight', dpi=600)
+    plt.savefig(output_path, dpi=600, bbox_inches="tight")
+    plt.savefig(output_path.replace(".png", ".pdf"), bbox_inches="tight", dpi=600)
     plt.close()
     print(f"Saved t-SNE plot to: {output_path}")
 
@@ -65,15 +77,15 @@ def plot_effective_rank(rank_per_mpp, output_path):
     ranks = [rank_per_mpp[mpp] for mpp in mpps]
 
     fig, ax = plt.subplots(figsize=(6, 5))
-    ax.plot(mpps, ranks, marker='o', linewidth=2, markersize=8, color='#2E86AB')
-    ax.set_xlabel('MPP', fontsize=16)
-    ax.set_ylabel('Effective Rank', fontsize=16)
-    ax.tick_params(axis='both', labelsize=12)
-    ax.grid(True, alpha=0.3, linestyle='--')
+    ax.plot(mpps, ranks, marker="o", linewidth=2, markersize=8, color="#2E86AB")
+    ax.set_xlabel("MPP", fontsize=16)
+    ax.set_ylabel("Effective Rank", fontsize=16)
+    ax.tick_params(axis="both", labelsize=12)
+    ax.grid(True, alpha=0.3, linestyle="--")
     plt.tight_layout()
 
-    plt.savefig(output_path, dpi=600, bbox_inches='tight')
-    plt.savefig(output_path.replace('.png', '.pdf'), bbox_inches='tight', dpi=600)
+    plt.savefig(output_path, dpi=600, bbox_inches="tight")
+    plt.savefig(output_path.replace(".png", ".pdf"), bbox_inches="tight", dpi=600)
     plt.close()
     print(f"Saved effective rank plot to: {output_path}")
 
@@ -99,10 +111,9 @@ def main():
 
     # Build transform
     mean, std = img_normalization
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=mean, std=std)
-    ])
+    transform = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize(mean=mean, std=std)]
+    )
 
     # Extract embeddings for each MPP
     embeddings_dict = {}
@@ -132,7 +143,7 @@ def main():
             print(f"  MPP {mpp}: Effective Rank = {effective_rank:.2f}")
 
         rank_output_path = os.path.join(
-            args.output_dir, f'effective_rank_{args.model_name}.png'
+            args.output_dir, f"effective_rank_{args.model_name}.png"
         )
         plot_effective_rank(rank_per_mpp, rank_output_path)
 
@@ -151,9 +162,7 @@ def main():
         else:
             tsne_embeddings = embeddings_dict
 
-        tsne_output_path = os.path.join(
-            args.output_dir, f'tsne_{args.model_name}.png'
-        )
+        tsne_output_path = os.path.join(args.output_dir, f"tsne_{args.model_name}.png")
         plot_tsne(tsne_embeddings, args.mpps, tsne_output_path)
         plot_tsne(tsne_embeddings, args.mpps, tsne_output_path)
 
@@ -161,18 +170,25 @@ def main():
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='MPP analysis: t-SNE visualization and effective rank')
-    parser.add_argument('--model_name', type=str, required=True)
-    parser.add_argument('--mpps', type=float, nargs='+', required=True)
-    parser.add_argument('--tcga_data_root', type=str, required=True)
-    parser.add_argument('--output_dir', type=str, default='mpp_analysis_figures')
-    parser.add_argument('--batch_size', type=int, default=250)
-    parser.add_argument('--num_workers', type=int, default=4)
-    parser.add_argument('--gpu_ids', type=str, default='0')
-    parser.add_argument('--max_points_tsne', type=int, default=5000)
-    parser.add_argument('--skip_tsne', action='store_true', help='Skip t-SNE computation')
-    parser.add_argument('--skip_rank', action='store_true', help='Skip effective rank computation')
+    parser = argparse.ArgumentParser(
+        description="MPP analysis: t-SNE visualization and effective rank"
+    )
+    parser.add_argument("--model_name", type=str, required=True)
+    parser.add_argument("--mpps", type=float, nargs="+", required=True)
+    parser.add_argument("--tcga_data_root", type=str, required=True)
+    parser.add_argument("--output_dir", type=str, default="mpp_analysis_figures")
+    parser.add_argument("--batch_size", type=int, default=250)
+    parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--gpu_ids", type=str, default="0")
+    parser.add_argument("--max_points_tsne", type=int, default=5000)
+    parser.add_argument(
+        "--skip_tsne", action="store_true", help="Skip t-SNE computation"
+    )
+    parser.add_argument(
+        "--skip_rank", action="store_true", help="Skip effective rank computation"
+    )
     return parser.parse_args()
+
 
 if __name__ == "__main__":
     main()

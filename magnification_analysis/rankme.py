@@ -1,5 +1,6 @@
 import torch
 
+
 class RankMeMetric:
     def __init__(self, eps=1e-12):
         self.eps = eps

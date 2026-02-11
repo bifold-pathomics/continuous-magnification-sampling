@@ -52,6 +52,24 @@ Adjust the necessary data paths in the commands and run either of:
 ./run_bracs_eval.sh
 ```
 
+## Analysis
+
+### RankMe Analysis
+
+Generate RankMe plots to analyze embedding dimensionality across magnifications:
+
+```bash
+./create_rankme_plot.sh
+```
+
+### t-SNE Visualization
+
+Generate t-SNE plots to visualize embedding distributions across magnifications:
+
+```bash
+./create_tsne.sh
+```
+
 ## Models
 
 The trained models from our paper are available on Hugging Face:
@@ -77,6 +95,7 @@ Models are automatically downloaded when specified via the `--model_name` argume
 ## Release Notes
 
 **2025-02-11**
+- Added RankMe analysis and t-SNE visualization scripts
 - Released trained models: [bifold-pathomics/MultiScale_Models](https://huggingface.co/bifold-pathomics/MultiScale_Models)
 
 **2025-01-22**
