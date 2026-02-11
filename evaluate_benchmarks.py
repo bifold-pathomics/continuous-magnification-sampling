@@ -574,9 +574,7 @@ def main():
     if args.dataset == "tcga":
         label_df = pd.read_csv(args.tcga_label_file)
         print(f"Labels shape: {label_df.shape}")
-        label_df = pd.read_csv(args.tcga_label_file)
-        print(f"Labels shape: {label_df.shape}")
-
+  
     print("\n" + "=" * 60)
     print(f"EVALUATING {args.dataset.upper()} - K-FOLD CROSS-VALIDATION")
     print("=" * 60)

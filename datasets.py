@@ -8,16 +8,17 @@ from torchvision import transforms
 
 class TCGADataset(Dataset):
     def __init__(
-        self, image_dir: Path, slide_uuids: set, label_map: dict, transform=None
+        self, image_dir: Path, slide_uuids: set = None, label_map: dict = None, transform=None
     ):
         self.image_dir = image_dir
         self.transform = transform
         self.label_map = label_map
 
         all_files = list(image_dir.glob("*.png"))
-        self.image_paths = [
-            f for f in all_files if f.stem.rsplit("_", 2)[0] in slide_uuids
-        ]
+        self.image_paths = (
+            all_files if label_map is None
+            else [f for f in all_files if f.stem.rsplit("_", 2)[0] in slide_uuids]
+        )
 
     def __len__(self):
         return len(self.image_paths)
@@ -25,7 +26,7 @@ class TCGADataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         slide_uuid = img_path.stem.rsplit("_", 2)[0]
-        label = self.label_map[slide_uuid]
+        label = self.label_map[slide_uuid] if self.label_map else None
 
         img = Image.open(img_path).convert("RGB")
         if self.transform:
