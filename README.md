@@ -45,19 +45,11 @@ Adjust the source and output paths in `create_bracs_dataset.sh`, then run:
 Adjust the necessary data paths in the commands and run either of:
 
 ```bash
-python evaluate_benchmarks.py \
-    --dataset tcga \
-    --model_name vits_du_s1 \
-    --train_mpps 0.25 0.5 1.0 2.0 \
-    --test_mpps 0.25 0.375 0.5 0.75 1.0 1.5 2.0 \
-    --folds 0 1 2 3 4 \
-    --tcga_data_root /root/TCGA-MS/tcga_ms \
-    --tcga_label_file /root/TCGA-MS/tcga_ms/labels.csv \
-    --gpu_ids "0"
+./run_tcga_eval.sh
 ```
 
 ```bash
-run_bracs_eval.sh
+./run_bracs_eval.sh
 ```
 
 ## Models
