@@ -26,7 +26,7 @@ class TCGADataset(Dataset):
     def __getitem__(self, idx):
         img_path = self.image_paths[idx]
         slide_uuid = img_path.stem.rsplit("_", 2)[0]
-        label = self.label_map[slide_uuid] if self.label_map else None
+        label = self.label_map[slide_uuid] if self.label_map else 0
 
         img = Image.open(img_path).convert("RGB")
         if self.transform:

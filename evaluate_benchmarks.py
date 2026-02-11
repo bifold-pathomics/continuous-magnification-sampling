@@ -15,7 +15,7 @@ from model_loading.load_models import External
 from model_loading.load_models import TokenWrapperModel
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, f1_score
 from sklearn.neighbors import KNeighborsClassifier
-from datasets import (
+from dataloaders import (
     create_bracs_dataloaders,
     create_tcga_dataloaders,
 )
