@@ -255,91 +255,6 @@ def extract_embeddings(model, dataloader, device):
     return embeddings, labels
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Evaluate SSL models on TCGA or BRACS dataset"
-    )
-    parser.add_argument(
-        "--dataset",
-        type=str,
-        required=True,
-        choices=["tcga", "bracs"],
-        help="Dataset to evaluate on",
-    )
-    parser.add_argument(
-        "--model_name", type=str, required=True, help="Name of the model to evaluate"
-    )
-    parser.add_argument(
-        "--train_mpps",
-        type=float,
-        nargs="+",
-        default=[0.25, 0.5, 1.0, 2.0],
-        help="List of MPPs to use for training data",
-    )
-    parser.add_argument(
-        "--test_mpps",
-        type=float,
-        nargs="+",
-        default=[0.25, 0.375, 0.5, 0.75, 1.0, 1.5, 2.0],
-        help="List of MPPs to evaluate on",
-    )
-    parser.add_argument(
-        "--target_patchsize",
-        type=int,
-        default=224,
-        help="Target patch size for evaluation",
-    )
-    parser.add_argument(
-        "--batch_size", type=int, default=128, help="Batch size for dataloader"
-    )
-    parser.add_argument(
-        "--num_workers", type=int, default=4, help="Number of workers for dataloader"
-    )
-    parser.add_argument(
-        "--gpu_ids", type=str, default="0", help="GPU IDs to use, comma separated"
-    )
-    parser.add_argument(
-        "--output_dir", type=str, default="results", help="Directory to save results"
-    )
-    parser.add_argument(
-        "--folds",
-        type=int,
-        nargs="+",
-        default=[0, 1, 2, 3, 4],
-        help="Fold numbers to evaluate",
-    )
-    parser.add_argument(
-        "--classifier",
-        type=str,
-        nargs="+",
-        default=["logreg", "knn"],
-        choices=["logreg", "knn"],
-        help="Classifier(s) to use: logreg, knn, or both",
-    )
-    parser.add_argument(
-        "--bracs_data_root",
-        type=str,
-        default="BRACS_multimag",
-        help="Root directory for BRACS dataset",
-    )
-    parser.add_argument(
-        "--bracs_excel_path", type=str, default=None, help="Path to BRACS.xlsx"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=42, help="Random seed for reproducibility"
-    )
-    parser.add_argument("--token_mode", type=str, default="cls+mean")
-    parser.add_argument(
-        "--tcga_data_root",
-        type=str,
-        default="/app/tcga_ms",
-        help="Root directory for extracted TCGA patches",
-    )
-    parser.add_argument("--tcga_label_file", type=str, default="tcga_ms/labels.csv")
-
-    return parser.parse_args()
-
-
 def evaluate_dataset(args, model, device, img_normalization, fold, label_df=None):
     """Unified evaluation function for both BRACS and TCGA."""
 
@@ -501,6 +416,91 @@ def evaluate_dataset(args, model, device, img_normalization, fold, label_df=None
     )
 
     return classifier_results
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Evaluate SSL models on TCGA or BRACS dataset"
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        choices=["tcga", "bracs"],
+        help="Dataset to evaluate on",
+    )
+    parser.add_argument(
+        "--model_name", type=str, required=True, help="Name of the model to evaluate"
+    )
+    parser.add_argument(
+        "--train_mpps",
+        type=float,
+        nargs="+",
+        default=[0.25, 0.5, 1.0, 2.0],
+        help="List of MPPs to use for training data",
+    )
+    parser.add_argument(
+        "--test_mpps",
+        type=float,
+        nargs="+",
+        default=[0.25, 0.375, 0.5, 0.75, 1.0, 1.5, 2.0],
+        help="List of MPPs to evaluate on",
+    )
+    parser.add_argument(
+        "--target_patchsize",
+        type=int,
+        default=224,
+        help="Target patch size for evaluation",
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=128, help="Batch size for dataloader"
+    )
+    parser.add_argument(
+        "--num_workers", type=int, default=4, help="Number of workers for dataloader"
+    )
+    parser.add_argument(
+        "--gpu_ids", type=str, default="0", help="GPU IDs to use, comma separated"
+    )
+    parser.add_argument(
+        "--output_dir", type=str, default="results", help="Directory to save results"
+    )
+    parser.add_argument(
+        "--folds",
+        type=int,
+        nargs="+",
+        default=[0, 1, 2, 3, 4],
+        help="Fold numbers to evaluate",
+    )
+    parser.add_argument(
+        "--classifier",
+        type=str,
+        nargs="+",
+        default=["logreg", "knn"],
+        choices=["logreg", "knn"],
+        help="Classifier(s) to use: logreg, knn, or both",
+    )
+    parser.add_argument(
+        "--bracs_data_root",
+        type=str,
+        default="BRACS_multimag",
+        help="Root directory for BRACS dataset",
+    )
+    parser.add_argument(
+        "--bracs_excel_path", type=str, default=None, help="Path to BRACS.xlsx"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=42, help="Random seed for reproducibility"
+    )
+    parser.add_argument("--token_mode", type=str, default="cls+mean")
+    parser.add_argument(
+        "--tcga_data_root",
+        type=str,
+        default="/app/tcga_ms",
+        help="Root directory for extracted TCGA patches",
+    )
+    parser.add_argument("--tcga_label_file", type=str, default="tcga_ms/labels.csv")
+
+    return parser.parse_args()
 
 
 def main():
