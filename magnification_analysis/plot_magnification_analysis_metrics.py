@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from model_loading.load_models import External, TokenWrapperModel
 from dataloaders import TCGADataset
-from evaluate_benchmarks import 
+from evaluate_benchmarks import extract_embeddings
 from magnification_analysis.rankme import RankMeMetric
 
 

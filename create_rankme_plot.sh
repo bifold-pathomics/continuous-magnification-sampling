@@ -2,8 +2,8 @@
 
 python magnification_analysis/plot_magnification_analysis_metrics.py \
     --model_name vits_du_s1 \
-    --mpps 0.25 0.5 1.0 2.0 \
+    --mpps 0.25 0.375 0.5 0.75 1.0 1.5 2.0 \
     --tcga_data_root /root/TCGA-MS/tcga_ms \
-    --output_dir tsne_figures \
-    --skip_rank \
+    --output_dir rankme_figures \
+    --skip_tsne \
     --batch_size 250 \
