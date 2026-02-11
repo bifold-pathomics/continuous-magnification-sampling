@@ -6,5 +6,8 @@ version = "0.1.0"
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+py-modules = ["dataloaders", "evaluate_benchmarks"]
+
 [tool.setuptools.packages.find]
 where = ["."]

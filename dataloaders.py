@@ -14,7 +14,7 @@ class TCGADataset(Dataset):
         self.transform = transform
         self.label_map = label_map
 
-        all_files = list(image_dir.glob("*.png"))
+        all_files = [f for f in image_dir.glob("*.png") if not f.name.startswith("._")]
         self.image_paths = (
             all_files if label_map is None
             else [f for f in all_files if f.stem.rsplit("_", 2)[0] in slide_uuids]
