@@ -2,9 +2,9 @@ from typing import Any, Literal
 from dataclasses import dataclass
 from torch import nn
 
+
 @dataclass
 class ImageTransformParams:
-
     mini_patch_size: int
     pretraining_image_size: int
     normalization_mean: tuple[float, float, float]
@@ -35,8 +35,11 @@ _IMAGE_NORMALIZATIONS = {
     },
 }
 
+
 def get_img_normalization_statistics(
-    norm_name: Literal["imagenet", "ihc_proxy", "kang", "hibou", "kaiko", "optimus"] = "imagenet",
+    norm_name: Literal[
+        "imagenet", "ihc_proxy", "kang", "hibou", "kaiko", "optimus"
+    ] = "imagenet",
 ) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
     """
     Get the mean and standard deviation statistics for image normalization.

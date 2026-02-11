@@ -13,8 +13,6 @@ from safetensors.torch import load_file
 import json
 
 
-
-
 def load_model(name):
     image_size = 224
     patch_size = 14
@@ -36,7 +34,9 @@ def load_model(name):
             "reg_tokens": 8,
             "dynamic_img_size": True,
         }
-        model = timm.create_model("hf-hub:MahmoodLab/UNI2-h", pretrained=True, **timm_kwargs)
+        model = timm.create_model(
+            "hf-hub:MahmoodLab/UNI2-h", pretrained=True, **timm_kwargs
+        )
         patch_size = 14
     elif name == "prov_gigapath":
         model = timm.create_model(
@@ -69,10 +69,13 @@ def load_model(name):
             config = json.load(f)
         weights_path = hf_hub_download(repo_id=repo_id, filename=f"{name}.safetensors")
         state_dict = load_file(weights_path)
-        model = timm.create_model(config["architecture"], pretrained=False, img_size=config["img_size"])
+        model = timm.create_model(
+            config["architecture"], pretrained=False, img_size=config["img_size"]
+        )
         model.load_state_dict(state_dict)
         model.eval()
     return model, normalization, image_size, patch_size
+
 
 class BaseModelEvaluation:
     def __init__(self, model_name: str) -> None:
@@ -85,7 +88,9 @@ class BaseModelEvaluation:
     def get_image_transform_params(self, config):
         """Read image transform parameters from config and create ImageTransformParams."""
         norm_name = (
-            config.img_normalization if hasattr(config, "img_normalization") else "imagenet"
+            config.img_normalization
+            if hasattr(config, "img_normalization")
+            else "imagenet"
         )
         norm_mean, norm_std = get_img_normalization_statistics(norm_name=norm_name)
 
@@ -102,7 +107,7 @@ class BaseModelEvaluation:
             if hasattr(config, "transforms_profile")
             else "MB-transforms",
         )
-    
+
 
 class External(BaseModelEvaluation):
     """Model Selection Benchmark evaluation for external models."""
@@ -146,6 +151,7 @@ class TokenWrapperConfig(BaseModel):
         call_mode (str): The mode for calling the model. Can be 'forward_features' or 'fsdp_call'.
         model (torch.nn.Module): The model to wrap.
     """
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -171,9 +177,14 @@ class TokenWrapperConfig(BaseModel):
     @model_validator(mode="after")
     def validate_model_compatibility(self):
         """Validate model compatibility with call_mode"""
-        if self.call_mode == "forward_features" and not hasattr(self.model, "forward_features"):
-            raise ValueError(f"The model does not have forward_features method: {self.model}")
+        if self.call_mode == "forward_features" and not hasattr(
+            self.model, "forward_features"
+        ):
+            raise ValueError(
+                f"The model does not have forward_features method: {self.model}"
+            )
         return self
+
 
 class TokenWrapperModel(torch.nn.Module):
     def __init__(
@@ -256,5 +267,3 @@ class TokenWrapperModel(torch.nn.Module):
                 return torch.mean(patch_tokens, dim=1)
             case _:
                 raise ValueError(f"Unknown token mode: {modes}")
-
-
