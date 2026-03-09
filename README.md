@@ -9,13 +9,19 @@ This repository contains the accompanying code for our work on continuous magnif
 
 ### Prerequisites
 
-- Python 3.x
+- Python >= 3.10
 - Hugging Face account (for accessing certain models)
-- Installed packages from requirements.txt (`pip install -r requirements.txt`)
+
+### Installation
+
+```bash
+pip install -e .
+```
 
 ### Authentication
 
 Some public models require Hugging Face authentication. Log in before running evaluations:
+
 ```bash
 huggingface-cli login --token YOUR_TOKEN_HERE
 ```
@@ -25,6 +31,7 @@ huggingface-cli login --token YOUR_TOKEN_HERE
 ### 1. Download Dataset
 
 [TCGA-MS](https://huggingface.co/datasets/bifold-pathomics/TCGA-MS)
+
 
 ## BRACS-MS Dataset
 
