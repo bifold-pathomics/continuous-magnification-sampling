@@ -68,4 +68,6 @@ py-modules = ["dataloaders", "evaluate_benchmarks"]
 where = ["."]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+pythonpath = [
+  "."
+]
