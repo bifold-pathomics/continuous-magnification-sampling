@@ -57,17 +57,21 @@ test = [
 [project.urls]
 Repository = "https://github.com/bifold-pathomics/continuous-magnification-sampling"
 
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-py-modules = ["dataloaders", "evaluate_benchmarks"]
-
-[tool.setuptools.packages.find]
-where = ["."]
-
 [tool.pytest.ini_options]
 pythonpath = [
   "."
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+dev-dependencies = []
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["histo_models"]
