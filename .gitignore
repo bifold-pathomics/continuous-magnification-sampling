@@ -59,11 +59,6 @@ docs/_build/
 data/*
 !data/.gitkeep
 
-# Playground notebooks
-playground*.ipynb
-
-# Extract feature scripts
-extract_features_scripts/*
-
-beta_pyproject.toml
-setup_conda_env.sh
+# Results
+results/*
+!results/.gitkeep
