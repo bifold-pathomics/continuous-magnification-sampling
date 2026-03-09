@@ -87,7 +87,6 @@ def train_and_evaluate_classifier(
             C=C,
             max_iter=1000,
             solver="lbfgs",
-            multi_class="multinomial",
             random_state=42,
             class_weight="balanced",
         )
@@ -109,7 +108,6 @@ def train_and_evaluate_classifier(
         C=best_C,
         max_iter=1000,
         solver="lbfgs",
-        multi_class="multinomial",
         random_state=42,
         class_weight="balanced",
     )
