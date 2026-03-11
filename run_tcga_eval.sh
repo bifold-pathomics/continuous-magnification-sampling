@@ -4,6 +4,6 @@ python evaluate_benchmarks.py \
     --train_mpps 0.25 0.5 1.0 2.0 \
     --test_mpps 0.25 0.375 0.5 0.75 1.0 1.5 2.0 \
     --folds 0 1 2 3 4 \
-    --tcga_data_root /root/TCGA-MS/tcga_ms \
-    --tcga_label_file /root/TCGA-MS/tcga_ms/labels.csv \
+    --tcga_data_root data/tcga_ms \
+    --tcga_label_file data/tcga_ms/labels.csv \
     --gpu_ids "0" \

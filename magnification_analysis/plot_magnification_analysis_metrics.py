@@ -163,8 +163,7 @@ def main():
             tsne_embeddings = embeddings_dict
 
         tsne_output_path = os.path.join(args.output_dir, f"tsne_{args.model_name}.png")
-        plot_tsne(tsne_embeddings, args.mpps, tsne_output_path)
-        plot_tsne(tsne_embeddings, args.mpps, tsne_output_path)
+        plot_tsne(tsne_embeddings, tsne_output_path)
 
     print("\nAnalysis complete!")
 
